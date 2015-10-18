@@ -5,6 +5,7 @@ using System.Text;
 
 using System.Net;
 using System.IO;
+using System.Threading;
 namespace Creep
 {
     class Program
@@ -72,16 +73,22 @@ namespace Creep
             {
                 StreamReader sr = new StreamReader(fi.OpenRead());
                 string json = sr.ReadToEnd();
+                sr.Close();
                 LitJson.JsonData data = LitJson.JsonMapper.ToObject(json);
-                restoreIndex = (int)data["restoreIndex"];
-                sr.Close();
+                try
+                {
+                    restoreIndex = (int)data["restoreIndex"];
+                    restoreFromCrash = true;
+                    fi = new FileInfo(jpgDataAdressFile);
+                    sr = new StreamReader(fi.OpenRead());
+                    jpgList = LitJson.JsonMapper.ToObject<List<string>>(sr.ReadToEnd());
+                    sr.Close();
+                }
+                catch (Exception e)
+                {
 
-                fi = new FileInfo(jpgDataAdressFile);
-                sr = new StreamReader(fi.OpenRead());
-                jpgList = LitJson.JsonMapper.ToObject<List<string>>(sr.ReadToEnd());
-                sr.Close();
-
-                restoreFromCrash = true;
+                    restoreIndex = 0;
+                }
             }
             else
             {
@@ -109,35 +116,47 @@ namespace Creep
                 //搜索所有图册路径
                 while (currentIndexPage < imagePageCount+(imageStartPage-1) )
                 {
-                    string result = webClient.DownloadString(imageLink + currentIndexPage+1);
-
-                    string getSrc = result;
-
-
-                    while (getSrc.IndexOf("src=\"") != -1)
+              
+                    try
                     {
-                        getSrc = getSrc.Substring(getSrc.IndexOf("src=\""));
-                        string getItem = getSrc.Substring(("src=\"").Length);
-                        getSrc = getItem;
+                        string result = webClient.DownloadString(imageLink + currentIndexPage + 1);
+                        string getSrc = result;
 
-                        getItem = getItem.Substring(0, getItem.IndexOf("\""));
 
-                        if (getItem.Contains(".jpg"))
+                        while (getSrc.IndexOf("src=\"") != -1)
                         {
-                            //to do
-                            if (fullResolution)
-                            {
-                                jpgList.Add(getItem.Replace("240", "full"));
-                            }
-                            else
-                            {
-                                jpgList.Add(getItem);
-                            }
-                            
+                            getSrc = getSrc.Substring(getSrc.IndexOf("src=\""));
+                            string getItem = getSrc.Substring(("src=\"").Length);
+                            getSrc = getItem;
 
+                            getItem = getItem.Substring(0, getItem.IndexOf("\""));
+
+                            if (getItem.Contains(".jpg"))
+                            {
+                                //to do
+                                if (fullResolution)
+                                {
+                                    jpgList.Add(getItem.Replace("240", "full"));
+                                }
+                                else
+                                {
+                                    jpgList.Add(getItem);
+                                }
+
+
+                            }
                         }
+                        currentIndexPage++;
                     }
-                    currentIndexPage++;
+                    catch (Exception e )
+                    {
+                        Console.WriteLine(imageLink + (currentIndexPage + 1));
+                        Console.WriteLine(e);
+                        Thread.Sleep(1000);
+                    }
+                    
+
+                    
                 }
 
                 //记录所有图册路径到json
