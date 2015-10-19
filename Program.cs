@@ -87,7 +87,7 @@ namespace Creep
                 }
                 catch (Exception e)
                 {
-
+                    Console.WriteLine(e);
                     restoreIndex = 0;
                 }
             }
@@ -114,6 +114,7 @@ namespace Creep
                 {
                     Console.WriteLine("download " + imagePageCount + " pages.");
                 }
+                int timeout_count = 0;
                 //搜索所有图册路径
                 while (currentIndexPage < imagePageCount+(imageStartPage-1) )
                 {
@@ -122,6 +123,7 @@ namespace Creep
                     {
                         string result = webClient.DownloadString(imageLink + (currentIndexPage + 1));
                         Console.WriteLine((currentIndexPage + 1)+" page loaded.");
+                        timeout_count = 0;
                         string getSrc = result;
 
 
@@ -145,7 +147,12 @@ namespace Creep
                     {
                         Console.WriteLine(imageLink + (currentIndexPage + 1));
                         Console.WriteLine(e);
-                        currentIndexPage++;
+                        timeout_count++;
+                        if (timeout_count>10)
+                        {
+                            currentIndexPage++;
+                            timeout_count = 0;
+                        }                        
                         Thread.Sleep(1000);
                         
                     }
@@ -187,7 +194,17 @@ namespace Creep
                     address = address.Replace(".240.", ".full.");
                 }
                 Console.Write(Path.GetFileName(address));
-                webClient.DownloadFile(address, Path.GetFileName(address));
+                try
+                {
+                    webClient.DownloadFile(address, Path.GetFileName(address));
+                }
+                catch (Exception e)
+                {
+                    i--;
+                    Console.WriteLine(e);
+                    continue;
+                }
+                
 
                 File.Copy(Path.GetFileName(address), "image/" + imagePath + "/" + Path.GetFileName(address), true);
                 File.Delete(Path.GetFileName(address));
@@ -220,7 +237,7 @@ namespace Creep
             data["imageStartPage"] = imageStartPage;
             data["imagePageCount"] = imagePageCount;
             data["fullResolution"] = fullResolution;
-            data["note"] = "imageLink:last number of the website adress don't input,this program will increase auto to search.If imageEndPage ==-1 it means search the whole website.";
+            data["note"] = "imageLink:last number of the website adress don't input,this program will increase auto to search.If imagePageCount ==-1 it means search the whole website.";
             sw.Write(data.ToJson());
             sw.Close();
         }
