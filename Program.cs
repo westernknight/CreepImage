@@ -31,6 +31,7 @@ namespace Creep
         static bool restoreFromCrash = false;
         static void Main(string[] args)
         {
+
             string[] jpgJunkFiles = Directory.GetFiles(".", "*.jpg");
             foreach (var item in jpgJunkFiles)
             {
@@ -119,7 +120,8 @@ namespace Creep
               
                     try
                     {
-                        string result = webClient.DownloadString(imageLink + currentIndexPage + 1);
+                        string result = webClient.DownloadString(imageLink + (currentIndexPage + 1));
+                        Console.WriteLine((currentIndexPage + 1)+" page loaded.");
                         string getSrc = result;
 
 
@@ -134,16 +136,7 @@ namespace Creep
                             if (getItem.Contains(".jpg"))
                             {
                                 //to do
-                                if (fullResolution)
-                                {
-                                    jpgList.Add(getItem.Replace("240", "full"));
-                                }
-                                else
-                                {
-                                    jpgList.Add(getItem);
-                                }
-
-
+                                jpgList.Add(getItem);
                             }
                         }
                         currentIndexPage++;
@@ -152,7 +145,9 @@ namespace Creep
                     {
                         Console.WriteLine(imageLink + (currentIndexPage + 1));
                         Console.WriteLine(e);
+                        currentIndexPage++;
                         Thread.Sleep(1000);
+                        
                     }
                     
 
@@ -186,11 +181,16 @@ namespace Creep
             Console.WriteLine(jpgList.Count + " files. " + (jpgList.Count - restoreIndex)+" remain.");
             for (int i = restoreIndex; i < jpgList.Count; i++)
             {
-                Console.Write(Path.GetFileName(jpgList[i]));
-                webClient.DownloadFile(jpgList[i], Path.GetFileName(jpgList[i]));
+                string address = jpgList[i];
+                if (fullResolution)
+                {
+                    address = address.Replace(".240.", ".full.");
+                }
+                Console.Write(Path.GetFileName(address));
+                webClient.DownloadFile(address, Path.GetFileName(address));
 
-                File.Copy(Path.GetFileName(jpgList[i]), "image/" + imagePath + "/" + Path.GetFileName(jpgList[i]),true);
-                File.Delete(Path.GetFileName(jpgList[i]));
+                File.Copy(Path.GetFileName(address), "image/" + imagePath + "/" + Path.GetFileName(address), true);
+                File.Delete(Path.GetFileName(address));
                 Console.WriteLine("\t" + (((float)i+1) / jpgList.Count * 100) + "%");
 
                 fi = new FileInfo(crashInfo);
