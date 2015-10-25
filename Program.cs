@@ -36,22 +36,19 @@ namespace Creep
         static RestoreData restoreData = new RestoreData();
 
 
-        static int currentIndexPage = 0;
-
-
         static string restoreDataFile = "data.json";
 
 
         static FileInfo fi = null;
 
         static string imageJsonConfig = "config.json";
-        static string imageLink = "http://www.zerochan.net/Hatsune+Miku";
-        static string currentAddressParam = "http://www.zerochan.net/Hatsune+Miku";
-        static string imagePath = "Hatsune Miku";
+        static string imageLink = "http://www.zerochan.net/Fate%2Fstay+night";
+        static string currentAddressParam = "http://www.zerochan.net/Fate%2Fstay+night";
+        static string imagePath = "temp";
 
-        static int imagePageCount = 2;
+        static int imagePageCount = 0;
 
-        static StreamWriter crashDataWriter;
+ 
 
         enum RestoreState
         {
@@ -81,13 +78,12 @@ namespace Creep
                     LitJson.JsonData data = LitJson.JsonMapper.ToObject(json);
                     imageLink = (string)data["imageLink"];
                     currentAddressParam = imageLink;
-
-                    imagePath = (string)data["imagePath"];
+                    imagePath = Path.GetFileName(imageLink);
 
                     imagePageCount = (int)data["imagePageCount"];
 
-                    currentIndexPage = 0;
                     sr.Close();
+                    LoadRestoreDataFile();
                 }
                 catch (Exception e)
                 {
@@ -103,52 +99,9 @@ namespace Creep
                 CreateJsonConfig();
             }
 
-            fi = new FileInfo(restoreDataFile);
-            if (fi.Exists)
-            {
-                StreamReader sr = new StreamReader(fi.OpenRead());
-                string json = sr.ReadToEnd();
-                sr.Close();
-                LitJson.JsonData data = LitJson.JsonMapper.ToObject(json);
-                try
-                {
+            
 
-                    fi = new FileInfo(restoreDataFile);
-                    sr = new StreamReader(fi.OpenRead());
-
-                    restoreData = LitJson.JsonMapper.ToObject<RestoreData>(sr.ReadToEnd());
-
-                    if (restoreData.imageLink == imageLink)
-                    {
-                        restoreFromCrash = true;
-                    }
-                    else
-                    {
-                        restoreData.imageLink = imageLink;
-                        restoreData.restoreState = RestoreState.rs_searchPage;
-                        restoreData.restoreIndex = 0;
-                        restoreData.jpgList.Clear();
-                        restoreData.searchPage.Clear();
-                        restoreData.targetWebSiteList.Clear();
-                    }
-                    sr.Close();
-                }
-                catch (Exception e)
-                {
-
-                    Console.WriteLine(e);
-                }
-            }
-            else
-            {
-                restoreData.imageLink = imageLink;
-                restoreData.restoreState = RestoreState.rs_searchPage;
-                restoreData.restoreIndex = 0;
-                restoreData.jpgList.Clear();
-                restoreData.searchPage.Clear();
-                restoreData.targetWebSiteList.Clear();
-            }
-
+            Console.WriteLine(  "task: "+  imageLink);
 
 
 
@@ -249,6 +202,55 @@ namespace Creep
 
         }
 
+        private static void LoadRestoreDataFile()
+        {
+            fi = new FileInfo(restoreDataFile);
+            if (fi.Exists)
+            {
+                StreamReader sr = new StreamReader(fi.OpenRead());
+                string json = sr.ReadToEnd();
+                sr.Close();
+                LitJson.JsonData data = LitJson.JsonMapper.ToObject(json);
+                try
+                {
+
+                    fi = new FileInfo(restoreDataFile);
+                    sr = new StreamReader(fi.OpenRead());
+
+                    restoreData = LitJson.JsonMapper.ToObject<RestoreData>(sr.ReadToEnd());
+
+                    if (restoreData.imageLink == imageLink)
+                    {
+                        restoreFromCrash = true;
+                    }
+                    else
+                    {
+                        restoreData.imageLink = imageLink;
+                        restoreData.restoreState = RestoreState.rs_searchPage;
+                        restoreData.restoreIndex = 0;
+                        restoreData.jpgList.Clear();
+                        restoreData.searchPage.Clear();
+                        restoreData.targetWebSiteList.Clear();
+                    }
+                    sr.Close();
+                }
+                catch (Exception e)
+                {
+
+                    Console.WriteLine(e);
+                }
+            }
+            else
+            {
+                restoreData.imageLink = imageLink;
+                restoreData.restoreState = RestoreState.rs_searchPage;
+                restoreData.restoreIndex = 0;
+                restoreData.jpgList.Clear();
+                restoreData.searchPage.Clear();
+                restoreData.targetWebSiteList.Clear();
+            }
+        }
+
         private static void WriteCrashFile()
         {
 
@@ -264,35 +266,61 @@ namespace Creep
             {
                 string result = webClient.DownloadString(GetTheRightAddress(imageLink));
                 imagePageCount = GetWholeWebsitePageCount(result);
-            }
+            }        
             //搜索所有图册路径
-            Console.WriteLine("查询网页路径");
-            currentIndexPage = restoreData.restoreIndex;
+            Console.WriteLine("查询网页路径 共" + imagePageCount+"页");
+
             if (restoreData.searchPage.Count>0)
             {
-                currentAddressParam = restoreData.searchPage[currentIndexPage];
+
+                //get the next page address
+
+                string result = webClient.DownloadString(restoreData.searchPage[restoreData.searchPage.Count-1]);
+                string getSrc = result;
+                int targetIndexPrevWordCount = 50;
+                try
+                {
+                    if (getSrc.IndexOf("next") > targetIndexPrevWordCount)
+                    {
+                        getSrc = getSrc.Substring(getSrc.IndexOf("next") - targetIndexPrevWordCount);
+                        getSrc = getSrc.Substring(getSrc.IndexOf("a href=\"") + ("a href=\"").Length, getSrc.IndexOf("\" tabindex=") - (getSrc.IndexOf("a href=\"") + ("a href=\"").Length));
+
+                        currentAddressParam = GetTheRightAddress(imageLink) + getSrc;
+                    }
+                    else
+                    {
+                        // to do the end with error
+                        throw new NullReferenceException();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("分析下一页算法错误");
+                    Console.WriteLine(e);
+                    Console.WriteLine("是否继续?");
+                    imagePageCount = 0;
+                    Console.ReadKey();
+                }
+
             }
-            else
-            {
-                restoreData.searchPage.Add(currentAddressParam);
-            }
-            while (currentIndexPage < imagePageCount)
+           
+            while (restoreData.searchPage.Count < imagePageCount)
             {
                 try
                 {
                     string result = webClient.DownloadString(currentAddressParam);
 
                     //and this????
+                    restoreData.searchPage.Add(currentAddressParam);
+                    WriteCrashFile();
+                    Console.WriteLine(currentAddressParam + " " + (restoreData.searchPage.Count) + "/" + imagePageCount);
+                   
 
-                    Console.WriteLine(currentAddressParam + " " + (currentIndexPage + 1) + "/" + imagePageCount);
 
-
-
-                    currentIndexPage++;
-
-                    if (currentIndexPage < imagePageCount)
+                    //get the next page address
+                    if (restoreData.searchPage.Count < imagePageCount)
                     {
-                        //get the next page address
+                        
                         string getSrc = result;
                         int targetIndexPrevWordCount = 50;
                         try
@@ -302,13 +330,8 @@ namespace Creep
                                 getSrc = getSrc.Substring(getSrc.IndexOf("next") - targetIndexPrevWordCount);
                                 getSrc = getSrc.Substring(getSrc.IndexOf("a href=\"") + ("a href=\"").Length, getSrc.IndexOf("\" tabindex=") - (getSrc.IndexOf("a href=\"") + ("a href=\"").Length));
 
-
                                 currentAddressParam = GetTheRightAddress(imageLink) + getSrc;
 
-                                //to do
-                                restoreData.searchPage.Add(currentAddressParam);
-                                restoreData.restoreIndex = currentIndexPage + 1;
-                                WriteCrashFile();
                             }
                             else
                             {
@@ -320,8 +343,9 @@ namespace Creep
                         {
                             Console.WriteLine("分析下一页算法错误");
                             Console.WriteLine(e);
+                            Console.WriteLine("是否继续?");
                             Console.ReadKey();
-                            return;
+                            break;
                         }
 
                     }
@@ -329,9 +353,7 @@ namespace Creep
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(imageLink + (currentIndexPage + 1));
-                    Console.WriteLine(e);
-                    currentIndexPage++;
+                    Console.WriteLine(e);      
                     Thread.Sleep(1000);
 
                 }
@@ -423,13 +445,17 @@ namespace Creep
         {
             StreamWriter sw = new StreamWriter(fi.Open(FileMode.Create));
             LitJson.JsonData data = new LitJson.JsonData();
-            data["imageLink"] = imageLink;
-            data["imagePath"] = imagePath;
+            data["imageLink"] = imageLink;  
             data["imagePageCount"] = imagePageCount;
-
-            data["note"] = "imageLink:last number of the website adress don't input,this program will increase auto to search.If imageEndPage ==-1 it means search the whole website.";
             sw.Write(data.ToJson());
             sw.Close();
+
+            restoreData.imageLink = imageLink;
+            restoreData.restoreState = RestoreState.rs_searchPage;
+            restoreData.restoreIndex = 0;
+            restoreData.jpgList.Clear();
+            restoreData.searchPage.Clear();
+            restoreData.targetWebSiteList.Clear();
         }
 
         static int GetWholeWebsitePageCount(string result)
