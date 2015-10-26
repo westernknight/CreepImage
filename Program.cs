@@ -17,16 +17,15 @@ namespace Creep
             public string imageLink;
             public RestoreState restoreState = RestoreState.rs_searchPage;
             public int restoreIndex = 0;
-
+            /// <summary>
+            /// 目标页
+            /// </summary>
             public List<string> searchPage = new List<string>();
             /// <summary>
             /// 通过目标页找到路径
             /// </summary>
             public List<string> jpgList = new List<string>();
-            /// <summary>
-            /// 每张缩略图的目标页
-            /// </summary>
-            public List<string> targetWebSiteList = new List<string>();
+            
         }
         //static List<string> jpgList = new List<string>();
 
@@ -230,7 +229,6 @@ namespace Creep
                         restoreData.restoreIndex = 0;
                         restoreData.jpgList.Clear();
                         restoreData.searchPage.Clear();
-                        restoreData.targetWebSiteList.Clear();
                     }
                     sr.Close();
                 }
@@ -247,7 +245,6 @@ namespace Creep
                 restoreData.restoreIndex = 0;
                 restoreData.jpgList.Clear();
                 restoreData.searchPage.Clear();
-                restoreData.targetWebSiteList.Clear();
             }
         }
 
@@ -297,9 +294,9 @@ namespace Creep
                 {
                     Console.WriteLine("分析下一页算法错误");
                     Console.WriteLine(e);
-                    Console.WriteLine("是否继续?");
+                    //Console.WriteLine("是否继续?");
                     imagePageCount = 0;
-                    Console.ReadKey();
+                    //Console.ReadKey();
                 }
 
             }
@@ -343,8 +340,8 @@ namespace Creep
                         {
                             Console.WriteLine("分析下一页算法错误");
                             Console.WriteLine(e);
-                            Console.WriteLine("是否继续?");
-                            Console.ReadKey();
+                            //Console.WriteLine("是否继续?");
+                            //Console.ReadKey();
                             break;
                         }
 
@@ -358,8 +355,7 @@ namespace Creep
 
                 }
             }
-            restoreData.targetWebSiteList = restoreData.searchPage;
-
+      
         }
 
 
@@ -367,12 +363,12 @@ namespace Creep
         private static void SearchAllFullJpgAddress()
         {
             int startIndex = restoreData.restoreIndex;
-            for (int i = startIndex; i < restoreData.targetWebSiteList.Count; i++)
+            for (int i = startIndex; i < restoreData.searchPage.Count; i++)
             {
 
 
-                Console.WriteLine("正在搜索第" + (i + 1) + "页图片(共" + restoreData.targetWebSiteList.Count + "页)" + "    [" + restoreData.targetWebSiteList[i] + "]");
-                string result = webClient.DownloadString(restoreData.targetWebSiteList[i]);
+                Console.WriteLine("正在搜索第" + (i + 1) + "页图片(共" + restoreData.searchPage.Count + "页)" + "    [" + restoreData.searchPage[i] + "]");
+                string result = webClient.DownloadString(restoreData.searchPage[i]);
                 try
                 {
 
@@ -418,7 +414,7 @@ namespace Creep
                         {
                             Console.WriteLine(e);
                             Console.WriteLine("进入缩略图页面成功，分析图片路径算法有误");
-                            Console.ReadKey();
+                            //Console.ReadKey();
                         }
 
 
@@ -435,7 +431,7 @@ namespace Creep
                     Console.WriteLine(result);
                     Console.WriteLine(e);
                     Console.WriteLine("分析缩略图页面算法有误");
-                    Console.ReadKey();
+                    //Console.ReadKey();
                 }
 
             }
@@ -455,7 +451,6 @@ namespace Creep
             restoreData.restoreIndex = 0;
             restoreData.jpgList.Clear();
             restoreData.searchPage.Clear();
-            restoreData.targetWebSiteList.Clear();
         }
 
         static int GetWholeWebsitePageCount(string result)
