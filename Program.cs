@@ -6,6 +6,7 @@ using System.Text;
 using System.Net;
 using System.IO;
 using System.Threading;
+using System.Text.RegularExpressions;
 namespace Creep
 {
     class Program
@@ -25,7 +26,7 @@ namespace Creep
             /// 通过目标页找到路径
             /// </summary>
             public List<string> jpgList = new List<string>();
-            
+
         }
         //static List<string> jpgList = new List<string>();
 
@@ -47,7 +48,7 @@ namespace Creep
 
         static int imagePageCount = 0;
 
- 
+
 
         enum RestoreState
         {
@@ -57,8 +58,34 @@ namespace Creep
         }
 
         static bool restoreFromCrash = false;
+        static string test = "http://www.zerochan.net/Fate%2Fstay+night?p=43";
+
+        static List<string> downLoadAddresses = new List<string>();
         static void Main(string[] args)
         {
+            downLoadAddresses.Add(SaveData.GetTargetAddress());
+            while (true)
+            {
+                Console.WriteLine(downLoadAddresses[downLoadAddresses.Count - 1]);
+                Console.WriteLine(SearchResource.GetCurrentPage(downLoadAddresses[downLoadAddresses.Count - 1]));
+                if (downLoadAddresses.Count < 30)
+                {
+                    string next = SearchResource.NextAddress(downLoadAddresses[downLoadAddresses.Count - 1]);
+                    downLoadAddresses.Add(next);
+                }
+                
+                Thread.Sleep(1000);
+            }
+
+
+            Console.WriteLine(SearchResource.GetCurrentPage(test));
+            return;
+
+
+            string sz = SearchResource.NextAddress("http://www.zerochan.net/Fate%2Fstay+night");
+            Console.WriteLine(sz);
+
+            return;
 
             string[] jpgJunkFiles = Directory.GetFiles(".", "*.jpg");
             foreach (var item in jpgJunkFiles)
@@ -98,9 +125,9 @@ namespace Creep
                 CreateJsonConfig();
             }
 
-            
 
-            Console.WriteLine(  "task: "+  imageLink);
+
+            Console.WriteLine("task: " + imageLink);
 
 
 
@@ -263,16 +290,16 @@ namespace Creep
             {
                 string result = webClient.DownloadString(GetTheRightAddress(imageLink));
                 imagePageCount = GetWholeWebsitePageCount(result);
-            }        
+            }
             //搜索所有图册路径
-            Console.WriteLine("查询网页路径 共" + imagePageCount+"页");
+            Console.WriteLine("查询网页路径 共" + imagePageCount + "页");
 
-            if (restoreData.searchPage.Count>0)
+            if (restoreData.searchPage.Count > 0)
             {
 
                 //get the next page address
 
-                string result = webClient.DownloadString(restoreData.searchPage[restoreData.searchPage.Count-1]);
+                string result = webClient.DownloadString(restoreData.searchPage[restoreData.searchPage.Count - 1]);
                 string getSrc = result;
                 int targetIndexPrevWordCount = 50;
                 try
@@ -300,7 +327,7 @@ namespace Creep
                 }
 
             }
-           
+
             while (restoreData.searchPage.Count < imagePageCount)
             {
                 try
@@ -311,13 +338,13 @@ namespace Creep
                     restoreData.searchPage.Add(currentAddressParam);
                     WriteCrashFile();
                     Console.WriteLine(currentAddressParam + " " + (restoreData.searchPage.Count) + "/" + imagePageCount);
-                   
+
 
 
                     //get the next page address
                     if (restoreData.searchPage.Count < imagePageCount)
                     {
-                        
+
                         string getSrc = result;
                         int targetIndexPrevWordCount = 50;
                         try
@@ -350,12 +377,12 @@ namespace Creep
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);      
+                    Console.WriteLine(e);
                     Thread.Sleep(1000);
 
                 }
             }
-      
+
         }
 
 
@@ -441,7 +468,7 @@ namespace Creep
         {
             StreamWriter sw = new StreamWriter(fi.Open(FileMode.Create));
             LitJson.JsonData data = new LitJson.JsonData();
-            data["imageLink"] = imageLink;  
+            data["imageLink"] = imageLink;
             data["imagePageCount"] = imagePageCount;
             sw.Write(data.ToJson());
             sw.Close();

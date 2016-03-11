@@ -53,6 +53,9 @@
     <Compile Include="Lexer.cs" />
     <Compile Include="ParserToken.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="SaveData.cs" />
+    <Compile Include="SaveImage.cs" />
+    <Compile Include="SearchResource.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
