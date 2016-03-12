@@ -8,14 +8,20 @@ namespace Creep
 {
     class SaveData
     {
-  
-       
+
+
         static string dataJsonConfig = "data.json";
         static FileInfo fi = null;
-   
+        static object lockObject = new object();
+
+        public static string parentAddress = "http://www.zerochan.net/Fate%2Fstay+night";
+        public static string targetAddress = "http://www.zerochan.net/Fate%2Fstay+night";
+        public static int wholePageCount = 0;
+        public static int currentDownloadPageIndex = 1;
+
         public static string GetTargetAddress()
         {
-            string targetAddress = "http://www.zerochan.net/Fate%2Fstay+night";
+
             fi = new FileInfo(dataJsonConfig);
             if (fi.Exists)
             {
@@ -25,30 +31,42 @@ namespace Creep
 
                     string json = sr.ReadToEnd();
                     LitJson.JsonData data = LitJson.JsonMapper.ToObject(json);
-                    targetAddress = (string)data["targetAddress"];                   
+                    parentAddress = (string)data["parentAddress"];
+                    targetAddress = (string)data["targetAddress"];
+                    wholePageCount = (int)data["wholePageCount"];
+                    currentDownloadPageIndex = (int)data["currentDownloadPageIndex"];
                     sr.Close();
 
                 }
                 catch (Exception)
                 {
-                    SaveCurrentTarget(targetAddress);             
+                    SaveCurrentTarget(targetAddress);
                 }
 
             }
             else
             {
 
-                SaveCurrentTarget(targetAddress);       
+                SaveCurrentTarget(targetAddress);
             }
             return targetAddress;
         }
+
         public static void SaveCurrentTarget(string address)
         {
-            StreamWriter sw = new StreamWriter(fi.Open(FileMode.Create));
-            LitJson.JsonData data = new LitJson.JsonData();
-            data["targetAddress"] = address;
-            sw.Write(data.ToJson());
-            sw.Close();
+            lock (lockObject)
+            {
+
+                StreamWriter sw = new StreamWriter(fi.Open(FileMode.Create));
+                LitJson.JsonData data = new LitJson.JsonData();
+                data["parentAddress"] = parentAddress;
+                data["targetAddress"] = address;
+                data["currentDownloadPageIndex"] = currentDownloadPageIndex;
+                data["wholePageCount"] = wholePageCount;
+                sw.Write(data.ToJson());
+                sw.Close();
+            }
+
         }
     }
 }

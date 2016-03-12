@@ -9,22 +9,22 @@ namespace Creep
 {
     class SaveImage
     {
-        static WebClient webClient = new WebClient();
-       static void Save(string imageLink)
-        {
-            string imagePath = Path.GetFileName(imageLink);
 
+        public static void Save(string imageLink, string imageDirectory)
+        {
+            WebClient webClient = new WebClient();
+        
             if (!Directory.Exists("image"))
             {
                 Directory.CreateDirectory("image");
             }
-            if (!Directory.Exists("image/" + imagePath))
+            if (!Directory.Exists("image/" + imageDirectory))
             {
-                Directory.CreateDirectory("image/" + imagePath);
+                Directory.CreateDirectory("image/" + imageDirectory);
             }
 
             webClient.DownloadFile(imageLink, Path.GetFileName(imageLink));
-            File.Copy(Path.GetFileName(imageLink), "image/" + imagePath + "/" + Path.GetFileName(imageLink), true);
+            File.Copy(Path.GetFileName(imageLink), "image/" + imageDirectory + "/" + Path.GetFileName(imageLink), true);
             File.Delete(Path.GetFileName(imageLink));
         }
     }

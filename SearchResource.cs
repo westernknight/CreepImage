@@ -9,9 +9,10 @@ namespace Creep
 {
     class SearchResource
     {
-        static WebClient webClient = new WebClient();
+
         public static string NextAddress(string currentAddress)
         {
+            WebClient webClient = new WebClient();
             string result = webClient.DownloadString(currentAddress);
 
 
@@ -48,6 +49,7 @@ namespace Creep
         /// <returns></returns>
         public static string[] GetAllFullImageLink(string currentAddress)
         {
+            WebClient webClient = new WebClient();
             List<string> links = new List<string>();
             List<string> smallLinks = new List<string>();
             string result = webClient.DownloadString(currentAddress);
@@ -85,6 +87,7 @@ namespace Creep
         }
         public static int GetCurrentPage(string address)
         {
+            WebClient webClient = new WebClient();
             address = webClient.DownloadString(address);
             string pattern = @"\bpage\s\S*\sof\s\S*\b";
             Match mc;
@@ -104,6 +107,7 @@ namespace Creep
         }
         public static int GetWholeWebsitePageCount(string address)
         {
+            WebClient webClient = new WebClient();
             address = GetParentAddress(address);
             address = webClient.DownloadString(address);
             string pattern = @"\bpage\s\S*\sof\s\S*\b";
