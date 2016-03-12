@@ -39,10 +39,41 @@ namespace Creep
                    
                 }
             }
-            
-
-
             return "";
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="currentAddress">page address</param>
+        /// <returns></returns>
+        public static string[] GetAllFullImageLink(string currentAddress)
+        {
+            List<string> links = new List<string>();
+            List<string> smallLinks = new List<string>();
+            string result = webClient.DownloadString(currentAddress);
+
+            string getSrc = result;
+            while (getSrc.IndexOf("<li >") != -1)
+            {
+                getSrc = getSrc.Substring(getSrc.IndexOf("<li >") + ("<li >").Length);
+                string pattern = @"\/[0-9]\d*";
+                Match mc;
+                mc = Regex.Match(getSrc, pattern);
+                if (mc.Success)
+                {
+                    smallLinks.Add(GetParentAddress(currentAddress) + mc.Value);
+                }
+               
+            }
+            for (int i = 0; i < smallLinks.Count; i++)
+            {
+                result = webClient.DownloadString(smallLinks[i]);
+                getSrc = result;
+                getSrc = getSrc.Substring(getSrc.IndexOf("fullsizeUrl = '"));
+                getSrc = getSrc.Substring(("fullsizeUrl = '").Length, getSrc.IndexOf("';") - ("fullsizeUrl = '").Length);
+                links.Add(getSrc);
+            }
+            return links.ToArray();
         }
         static string GetParentAddress(string address)
         {
@@ -56,7 +87,6 @@ namespace Creep
         {
             address = webClient.DownloadString(address);
             string pattern = @"\bpage\s\S*\sof\s\S*\b";
-            Regex r = new Regex(pattern);
             Match mc;
             mc = Regex.Match(address, pattern);
             address = mc.Value;
@@ -77,7 +107,6 @@ namespace Creep
             address = GetParentAddress(address);
             address = webClient.DownloadString(address);
             string pattern = @"\bpage\s\S*\sof\s\S*\b";
-            Regex r = new Regex(pattern);
             Match mc;
             mc = Regex.Match(address, pattern);
             address = mc.Value;

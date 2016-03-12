@@ -58,27 +58,75 @@ namespace Creep
         }
 
         static bool restoreFromCrash = false;
-        static string test = "http://www.zerochan.net/Fate%2Fstay+night?p=43";
+        static string test = "http://www.zerochan.net/Fate%2Fstay+night";
 
         static List<string> downLoadAddresses = new List<string>();
-        static void Main(string[] args)
+
+        static void PrepareDownLoadAddressThread()
         {
             downLoadAddresses.Add(SaveData.GetTargetAddress());
             while (true)
             {
-                Console.WriteLine(downLoadAddresses[downLoadAddresses.Count - 1]);
-                Console.WriteLine(SearchResource.GetCurrentPage(downLoadAddresses[downLoadAddresses.Count - 1]));
                 if (downLoadAddresses.Count < 30)
                 {
                     string next = SearchResource.NextAddress(downLoadAddresses[downLoadAddresses.Count - 1]);
+                    if (string.IsNullOrEmpty(next))
+                    {
+                        break;
+                    }
                     downLoadAddresses.Add(next);
                 }
-                
+
                 Thread.Sleep(1000);
             }
+        }
+        static void DownloadImageThread()
+        {
+            while (true)
+            {
+                if (downLoadAddresses.Count!=0)
+                {
+                    string address = downLoadAddresses[0];
+                    downLoadAddresses.RemoveAt(0);
 
 
-            Console.WriteLine(SearchResource.GetCurrentPage(test));
+                }
+                Thread.Sleep(1);
+            }
+        }
+        static void Main(string[] args)
+        {
+            SearchResource.GetAllFullImageLink(test);
+            return;
+            string x = @" <a href=""/1980808"" tabindex=""1"" style=""width""";
+     
+            Regex r = new Regex(@"\/[0-9]\d*");
+            Console.WriteLine( r.Match(x).Value);//0
+            return;
+
+
+            string sss = @"href=""/1981002""";
+            string pattern = @"\b/d1/S*/d2\b";
+            Match mc;
+            mc = Regex.Match(sss, pattern);
+            Console.WriteLine(mc.Value);
+            return;
+            string[] szz = SearchResource.GetAllFullImageLink("http://www.zerochan.net/Fate%2Fstay+night");
+            for (int i = 0; i < szz.Length; i++)
+            {
+                Console.WriteLine(szz[i]);
+            }
+            return;
+            ThreadStart starter = delegate { PrepareDownLoadAddressThread(); };
+            new Thread(starter).Start();
+            ThreadStart downloadImage = delegate { DownloadImageThread(); };
+            new Thread(downloadImage).Start();
+            while (true)
+            {
+                Thread.Sleep(1);
+            }
+
+           
             return;
 
 

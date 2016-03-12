@@ -10,9 +10,9 @@ namespace Creep
     class SaveImage
     {
         static WebClient webClient = new WebClient();
-       static void Save(string address)
+       static void Save(string imageLink)
         {
-            string imagePath = Path.GetFileName(address);
+            string imagePath = Path.GetFileName(imageLink);
 
             if (!Directory.Exists("image"))
             {
@@ -23,9 +23,9 @@ namespace Creep
                 Directory.CreateDirectory("image/" + imagePath);
             }
 
-            webClient.DownloadFile(address, Path.GetFileName(address));
-            File.Copy(Path.GetFileName(address), "image/" + imagePath + "/" + Path.GetFileName(address), true);
-            File.Delete(Path.GetFileName(address));
+            webClient.DownloadFile(imageLink, Path.GetFileName(imageLink));
+            File.Copy(Path.GetFileName(imageLink), "image/" + imagePath + "/" + Path.GetFileName(imageLink), true);
+            File.Delete(Path.GetFileName(imageLink));
         }
     }
 }
