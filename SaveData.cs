@@ -6,6 +6,14 @@ using System.Text;
 
 namespace Creep
 {
+    public class ThreadDeal
+    {
+        public string address;
+        public bool theading = false;
+    }
+    /// <summary>
+    /// 单线程下载任务，多线程处理任务
+    /// </summary>
     class SaveData
     {
 
@@ -14,10 +22,13 @@ namespace Creep
         static FileInfo fi = null;
         static object lockObject = new object();
 
-        public static string parentAddress = "http://www.zerochan.net/Fate%2Fstay+night";
-        public static string targetAddress = "http://www.zerochan.net/Fate%2Fstay+night";
+        public static string parentAddress = "http://www.zerochan.net/Graf+Zeppelin+%28Kantai+Collection%29";
+        public static string lastAddress;
+
+        public static List<string> prepareToDownloadAddressesList = new List<string>();
+        public static List<string> downloadedAddressesList = new List<string>();
         public static int wholePageCount = 0;
-        public static int currentDownloadPageIndex = 1;
+
         static string GetParentAddress(string address)
         {
             if (address.Contains("?"))
@@ -26,78 +37,86 @@ namespace Creep
             }
             return address;
         }
-        public static void ReadJsonData()
+        public static void ConstructData()
         {
-
-        }
-        public static string GetTargetAddress()
-        {
-            return targetAddress;
             fi = new FileInfo(dataJsonConfig);
             if (fi.Exists)
             {
                 StreamReader sr = fi.OpenText();
-                try
-                {
+                string json = sr.ReadToEnd();
+                LitJson.JsonData allData = LitJson.JsonMapper.ToObject(json);
+                parentAddress = (string)allData["parentAddress"];
+                lastAddress = (string)allData["lastAddress"];
 
-                    string json = sr.ReadToEnd();
-                    LitJson.JsonData data = LitJson.JsonMapper.ToObject(json);
-                    parentAddress = (string)data["parentAddress"];
-                    targetAddress = (string)data["targetAddress"];
-                    
-                    wholePageCount = (int)data["wholePageCount"];
-                    currentDownloadPageIndex = (int)data["currentDownloadPageIndex"];
-                    if (parentAddress != GetParentAddress(targetAddress))
+                
+                if (parentAddress == lastAddress)
+                {
+                    var downloadedData = allData["downloadedAddresses"];
+
+                    if (downloadedData.IsArray)
                     {
-                        currentDownloadPageIndex = 1;
+                        for (int i = 0; i < downloadedData.Count; i++)
+                        {
+                            downloadedAddressesList.Add((string)downloadedData[i]);
+                        }
                     }
-                    sr.Close();
-
+                    var prepareData = allData["prepareData"];
+                    if (prepareData.IsArray)
+                    {
+                        for (int i = 0; i < prepareData.Count; i++)
+                        {
+                            prepareToDownloadAddressesList.Add((string)prepareData[i]);
+                        }
+                    }
                 }
-                catch (Exception)
-                {
-                    StreamWriter sw = new StreamWriter(fi.Open(FileMode.Create));
-                    LitJson.JsonData data = new LitJson.JsonData();
-                    data["parentAddress"] = parentAddress;
-                    data["targetAddress"] = targetAddress;
-                    data["currentDownloadPageIndex"] = currentDownloadPageIndex;
-                    data["wholePageCount"] = wholePageCount;
-                    sw.Write(data.ToJson());
-                    sw.Close();
-                }
-
             }
             else
             {
-
                 StreamWriter sw = new StreamWriter(fi.Open(FileMode.Create));
-                LitJson.JsonData data = new LitJson.JsonData();
-                data["parentAddress"] = parentAddress;
-                data["targetAddress"] = targetAddress;
-                data["currentDownloadPageIndex"] = currentDownloadPageIndex;
-                data["wholePageCount"] = wholePageCount;
-                sw.Write(data.ToJson());
+                LitJson.JsonData allData = new LitJson.JsonData();
+                allData["parentAddress"] = parentAddress;
+                allData["lastAddress"] =lastAddress= parentAddress;
+                allData["downloadedAddresses"] = new LitJson.JsonData();
+                allData["downloadedAddresses"].SetJsonType(LitJson.JsonType.Array);
+                allData["prepareData"] = new LitJson.JsonData();
+                allData["prepareData"].SetJsonType(LitJson.JsonType.Array);
+                sw.Write(allData.ToJson());
                 sw.Close();
             }
-            return targetAddress;
         }
+   
+   
         /// <summary>
-        /// 只能一个引用
+        /// 只能一个引用,有可能重复下载完成，如果是重复下载完成，就忽略
         /// </summary>
         /// <param name="address"></param>
-        public static void SaveCurrentTarget(string address)
+        public static void SaveCurrentTarget(string address, List<ThreadDeal> prepareData)
         {
             lock (lockObject)
             {
-                currentDownloadPageIndex++;
                 StreamWriter sw = new StreamWriter(fi.Open(FileMode.Create));
-                LitJson.JsonData data = new LitJson.JsonData();
-                data["parentAddress"] = parentAddress;
-                data["targetAddress"] = address;
-                data["currentDownloadPageIndex"] = currentDownloadPageIndex;
-                data["wholePageCount"] = wholePageCount;
-                sw.Write(data.ToJson());
-                sw.Close();
+                if (!downloadedAddressesList.Contains(address))
+                {
+                    downloadedAddressesList.Add(address);
+
+                    LitJson.JsonData allData = new LitJson.JsonData();
+                    allData["parentAddress"] = parentAddress;
+                    allData["lastAddress"] = lastAddress;                    
+                    allData["downloadedAddresses"] = new LitJson.JsonData();
+                    allData["downloadedAddresses"].SetJsonType(LitJson.JsonType.Array);
+                    for (int i = 0; i < downloadedAddressesList.Count; i++)
+                    {
+                        allData["downloadedAddresses"].Add(downloadedAddressesList[i]);
+                    }
+                    allData["prepareData"] = new LitJson.JsonData();
+                    allData["prepareData"].SetJsonType(LitJson.JsonType.Array);
+                    for (int i = 0; i < prepareData.Count; i++)
+                    {
+                        allData["prepareData"].Add(prepareData[i].address);
+                    }
+                    sw.Write(allData.ToJson());
+                    sw.Close();
+                }
             }
 
         }

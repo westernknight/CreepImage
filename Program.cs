@@ -12,31 +12,55 @@ namespace Creep
     class Program
     {
 
-        static List<string> downLoadAddresses = new List<string>();
 
         static object lockObject = new object();
+        public static List<ThreadDeal> prepareToDownloadAddressesList = new List<ThreadDeal>();
+        static bool finish = false;
+        static List<int> runningThread = new List<int>();
         static void PrepareDownLoadAddressThread()
         {
-            
-           
-            string nowAddress = SaveData.GetTargetAddress();
-            downLoadAddresses.Add(nowAddress);
+            string nowAddress = "";
+            lock (lockObject)
+            {
+                for (int i = 0; i < SaveData.prepareToDownloadAddressesList.Count; i++)
+                {
+                    ThreadDeal obj = new ThreadDeal();
+                    obj.address = SaveData.prepareToDownloadAddressesList[i];
+                    prepareToDownloadAddressesList.Add(obj);
+                }
+
+                if (prepareToDownloadAddressesList.Count == 0)
+                {
+                    nowAddress = SaveData.parentAddress;
+                    ThreadDeal obj = new ThreadDeal();
+                    obj.address = nowAddress;
+                    prepareToDownloadAddressesList.Add(obj);
+                }
+                else
+                {
+                    nowAddress = prepareToDownloadAddressesList[prepareToDownloadAddressesList.Count - 1].address;
+                }
+
+            }
             while (true)
             {
 
                 lock (lockObject)
                 {
-                    if (downLoadAddresses.Count < 30 )
+                    if (prepareToDownloadAddressesList.Count < 30)
                     {
 
                         string next = SearchResource.NextAddress(nowAddress);
                         if (string.IsNullOrEmpty(next))
                         {
-                            Console.WriteLine("finish!!!");
+                            //Console.WriteLine("finish!!!");
+                            finish = true;
                             break;
                         }
                         nowAddress = next;
-                        downLoadAddresses.Add(next);
+                        ThreadDeal obj = new ThreadDeal();
+                        obj.address = next;
+                        prepareToDownloadAddressesList.Add(obj);
 
                     }
                 }
@@ -46,36 +70,63 @@ namespace Creep
         static int threadNum = 1;
         static void DownloadImageThread()
         {
+
             int id = threadNum++;
+            runningThread.Add(id);
+
             string address = "";
+            ThreadDeal threadingId = null;
             while (true)
             {
+                
                 lock (lockObject)
                 {
-                    if (downLoadAddresses.Count != 0)
+                    threadingId = null;
+                    for (int i = 0; i < prepareToDownloadAddressesList.Count; i++)
                     {
-                        address = downLoadAddresses[0];
-                        downLoadAddresses.RemoveAt(0);
+                        if (prepareToDownloadAddressesList[i].theading == false)
+                        {
+                            address = prepareToDownloadAddressesList[i].address;
+                            prepareToDownloadAddressesList[i].theading = true;
+                            threadingId = prepareToDownloadAddressesList[i];
+                            break;
+                        }
                     }
+
                 }
                 if (address != "")
                 {
 
                     Console.WriteLine("(" + id + ")" + "download: " + address);
 
-                    int page = SaveData.currentDownloadPageIndex;
+
                     List<string> allFullImageLinks = new List<string>();
                     allFullImageLinks.AddRange(SearchResource.GetAllFullImageLink(address));
                     for (int i = 0; i < allFullImageLinks.Count; i++)
                     {
-                        Console.WriteLine("("+id+")"+"[" + page + "/" + SaveData.wholePageCount + "]" + allFullImageLinks[i]);
+                        int page = SaveData.downloadedAddressesList.Count + 1;
+                        Console.WriteLine("(" + id + ")" + "[" + page + "/" + SaveData.wholePageCount + "]" + allFullImageLinks[i]);
                         SaveImage.Save(allFullImageLinks[i], Path.GetFileName(SaveData.parentAddress));
                     }
-        
-                    SaveData.SaveCurrentTarget(address);
+                    lock (lockObject)
+                    {
+                        if (threadingId==null)
+                        {
+                            Console.WriteLine("error!!!!!!!!      threadingId = null");
+                        }
+                        prepareToDownloadAddressesList.Remove(threadingId);
+                        SaveData.SaveCurrentTarget(address, prepareToDownloadAddressesList);
+                    }
                     
+
                     address = "";
 
+                }
+                else if (finish)
+                {
+                    Console.WriteLine("thread "+id+" terminiated.");
+                    runningThread.Remove(id);
+                    break;
                 }
                 Thread.Sleep(1);
             }
@@ -89,7 +140,9 @@ namespace Creep
                 File.Delete(item);
             }
 
-            string address = SaveData.GetTargetAddress();
+            SaveData.ConstructData();
+
+            string address = SaveData.parentAddress;
 
             int wholePageCount = SearchResource.GetWholeWebsitePageCount(address);
             if (wholePageCount != -1)
@@ -108,9 +161,14 @@ namespace Creep
                 ThreadStart downloadImage = delegate { DownloadImageThread(); };
                 new Thread(downloadImage).Start();
             }
-
+            bool printFinish = false;
             while (true)
             {
+                if (printFinish == false && runningThread.Count == 0)
+                {
+                    printFinish = true;
+                    Console.WriteLine("finish.");
+                }
                 Thread.Sleep(1);
             }
 
