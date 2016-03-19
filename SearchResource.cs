@@ -13,7 +13,23 @@ namespace Creep
         public static string NextAddress(string currentAddress)
         {
             WebClient webClient = new WebClient();
-            string result = webClient.DownloadString(currentAddress);
+            string result = "";
+            bool timeout = true;
+            while (timeout)
+            {
+                try
+                {
+                    result = webClient.DownloadString(currentAddress);
+                    timeout = false;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(currentAddress);
+                    Console.WriteLine(e);
+                }
+            }
+            
+            
 
 
             string getSrc = result;
@@ -52,7 +68,29 @@ namespace Creep
             WebClient webClient = new WebClient();
             List<string> links = new List<string>();
             List<string> smallLinks = new List<string>();
-            string result = webClient.DownloadString(currentAddress);
+            string result = "";
+
+
+            bool timeout = true;
+            while (timeout)
+            {
+                try
+                {
+                    result = webClient.DownloadString(currentAddress);
+                    timeout = false;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(currentAddress);
+                    Console.WriteLine(e);
+                }
+            }
+
+
+
+
+
+
 
             string getSrc = result;
             while (getSrc.IndexOf("<li >") != -1)
@@ -69,7 +107,21 @@ namespace Creep
             }
             for (int i = 0; i < smallLinks.Count; i++)
             {
-                result = webClient.DownloadString(smallLinks[i]);
+                timeout = true;
+                while (timeout)
+                {
+                    try
+                    {
+                        result = webClient.DownloadString(smallLinks[i]);
+                        timeout = false;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(smallLinks[i]);
+                        Console.WriteLine(e);
+                    }
+                }
+               
                 getSrc = result;
                 getSrc = getSrc.Substring(getSrc.IndexOf("fullsizeUrl = '"));
                 getSrc = getSrc.Substring(("fullsizeUrl = '").Length, getSrc.IndexOf("';") - ("fullsizeUrl = '").Length);
@@ -85,6 +137,7 @@ namespace Creep
             }
             return address;
         }
+#if false
         public static int GetCurrentPage(string address)
         {
             WebClient webClient = new WebClient();
@@ -102,14 +155,30 @@ namespace Creep
                     return num;
                 }
             }
-            
+
             return -1;
-        }
+        } 
+#endif
         public static int GetWholeWebsitePageCount(string address)
         {
             WebClient webClient = new WebClient();
             address = GetParentAddress(address);
-            address = webClient.DownloadString(address);
+
+
+            bool timeout = true;
+            while (timeout)
+            {
+                try
+                {
+                    address = webClient.DownloadString(address);
+                    timeout = false;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(address);
+                    Console.WriteLine(e);
+                }
+            }
             string pattern = @"\bpage\s\S*\sof\s\S*\b";
             Match mc;
             mc = Regex.Match(address, pattern);

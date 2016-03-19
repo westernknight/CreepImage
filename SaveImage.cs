@@ -23,9 +23,25 @@ namespace Creep
                 Directory.CreateDirectory("image/" + imageDirectory);
             }
 
-            webClient.DownloadFile(imageLink, Path.GetFileName(imageLink));
-            File.Copy(Path.GetFileName(imageLink), "image/" + imageDirectory + "/" + Path.GetFileName(imageLink), true);
-            File.Delete(Path.GetFileName(imageLink));
+            bool timeout = true;
+            while (timeout)
+            {
+                try
+                {
+                    webClient.DownloadFile(imageLink, Path.GetFileName(imageLink));
+                    timeout = false;
+                    File.Copy(Path.GetFileName(imageLink), "image/" + imageDirectory + "/" + Path.GetFileName(imageLink), true);
+                    File.Delete(Path.GetFileName(imageLink));
+                    
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(imageLink);
+                    Console.WriteLine(e);
+
+                }
+            }
+
         }
     }
 }

@@ -17,21 +17,25 @@ namespace Creep
         static object lockObject = new object();
         static void PrepareDownLoadAddressThread()
         {
-            downLoadAddresses.Add(SaveData.GetTargetAddress());
-
+            
+           
+            string nowAddress = SaveData.GetTargetAddress();
+            downLoadAddresses.Add(nowAddress);
             while (true)
             {
 
                 lock (lockObject)
                 {
-                    if (downLoadAddresses.Count < 30 && downLoadAddresses.Count!=0)
+                    if (downLoadAddresses.Count < 30 )
                     {
 
-                        string next = SearchResource.NextAddress(downLoadAddresses[downLoadAddresses.Count - 1]);
+                        string next = SearchResource.NextAddress(nowAddress);
                         if (string.IsNullOrEmpty(next))
                         {
+                            Console.WriteLine("finish!!!");
                             break;
                         }
+                        nowAddress = next;
                         downLoadAddresses.Add(next);
 
                     }
@@ -39,9 +43,10 @@ namespace Creep
                 Thread.Sleep(1000);
             }
         }
-
+        static int threadNum = 1;
         static void DownloadImageThread()
         {
+            int id = threadNum++;
             string address = "";
             while (true)
             {
@@ -56,17 +61,17 @@ namespace Creep
                 if (address != "")
                 {
 
-                    Console.WriteLine("download: " + address);
+                    Console.WriteLine("(" + id + ")" + "download: " + address);
 
-                    int page = SaveData.currentDownloadPageIndex++;
+                    int page = SaveData.currentDownloadPageIndex;
                     List<string> allFullImageLinks = new List<string>();
                     allFullImageLinks.AddRange(SearchResource.GetAllFullImageLink(address));
                     for (int i = 0; i < allFullImageLinks.Count; i++)
                     {
-                        Console.WriteLine("[" + page + "/" + SaveData.wholePageCount + "]" + allFullImageLinks[i]);
+                        Console.WriteLine("("+id+")"+"[" + page + "/" + SaveData.wholePageCount + "]" + allFullImageLinks[i]);
                         SaveImage.Save(allFullImageLinks[i], Path.GetFileName(SaveData.parentAddress));
                     }
-                    
+        
                     SaveData.SaveCurrentTarget(address);
                     
                     address = "";
@@ -78,13 +83,18 @@ namespace Creep
 
         static void Main(string[] args)
         {
+            string[] jpgJunkFiles = Directory.GetFiles(".", "*.jpg");
+            foreach (var item in jpgJunkFiles)
+            {
+                File.Delete(item);
+            }
+
             string address = SaveData.GetTargetAddress();
 
             int wholePageCount = SearchResource.GetWholeWebsitePageCount(address);
             if (wholePageCount != -1)
             {
                 SaveData.wholePageCount = wholePageCount;
-                SaveData.SaveCurrentTarget(address);
             }
 
 
